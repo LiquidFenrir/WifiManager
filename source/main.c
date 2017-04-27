@@ -107,6 +107,9 @@ int main() {
 			ret = CFG_SetConfigInfoBlk8(CFG_WIFI_SLOT_SIZE, CFG_WIFI_BLKID+selected_slot, wifiblk);
 			if (ret) printf("CFG_GetConfigInfoBlk8\nresult: 0x%08x\n", (unsigned int)ret);
 			
+			ret = CFG_UpdateConfigNANDSavegame();
+			if (ret) printf("CFG_UpdateConfigNANDSavegame\nresult: 0x%08x\n", (unsigned int)ret);
+			
 			memset(wifiblk, 0x0, CFG_WIFI_SLOT_SIZE);
 			
 			puts("done");
