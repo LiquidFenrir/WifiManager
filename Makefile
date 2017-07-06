@@ -9,24 +9,25 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 
-APP_TITLE       := WifiManager
-APP_DESCRIPTION := wifi slot saving/restore test
-APP_AUTHOR      := LiquidFenrir
+APP_TITLE        :=  WifiManager
+APP_DESCRIPTION  :=  Backup and restore your WiFi slots!
+APP_AUTHOR       :=  LiquidFenrir
 
-ICON            := icon.png
+TARGET           :=  $(notdir $(CURDIR))
+OUTDIR           :=  out
+BUILD            :=  build
+SOURCES          :=  source source/filebrowser
+INCLUDES         :=  include
 
-PRODUCT_CODE := CTR-P-WIFI
-UNIQUE_ID    := 0x05DC9
+ICON             :=  icon.png
+ICON_FLAGS       :=  visible,nosavebackups
 
-BANNER_AUDIO := audio.wav
-BANNER_IMAGE := banner.png
+BANNER_AUDIO     :=  audio.wav
+BANNER_IMAGE     :=  banner.png
 
-TARGET		:=	$(notdir $(CURDIR))
-BUILD		:=	build
-SOURCES		:=	source
-DATA		:=	data
-INCLUDES	:=	include
-#ROMFS		:=	romfs
+RSF_PATH         :=  app.rsf
+PRODUCT_CODE     :=  CTR-P-WIFI
+UNIQUE_ID        :=  0x05DC9
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -37,7 +38,7 @@ CFLAGS	:=	-g -Wall -Wextra -O2 -mword-relocations \
 			-fomit-frame-pointer -ffunction-sections \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS -D_GNU_SOURCE
+CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
@@ -60,7 +61,7 @@ LIBDIRS	:= $(CTRULIB)
 ifneq ($(BUILD),$(notdir $(CURDIR)))
 #---------------------------------------------------------------------------------
 
-export OUTPUT	:=	$(CURDIR)/$(TARGET)
+export OUTPUT	:=	$(CURDIR)/$(OUTDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
@@ -113,39 +114,48 @@ else
 endif
 
 ifeq ($(strip $(NO_SMDH)),)
-	export _3DSXFLAGS += --smdh=$(CURDIR)/$(TARGET).smdh
+	export _3DSXFLAGS += --smdh=$(OUTPUT).smdh
 endif
 
 ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: $(BUILD) clean all 3dsx cia
+.PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
+3dsx: $(BUILD) $(OUTPUT).3dsx
+
+cia : $(BUILD) $(OUTPUT).cia
+
 all: 3dsx cia
-3dsx: $(BUILD)
-cia : $(OUTPUT).cia
 
 $(BUILD):
-	@[ -d $@ ] || mkdir -p $@
+	@mkdir -p $(OUTDIR)
+	@[ -d "$@" ] || mkdir -p "$@"
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf
+	@rm -fr $(BUILD) $(OUTDIR)
 
 #---------------------------------------------------------------------------------
 
-MAKEROM ?= makerom
+ifeq ($(strip $(NO_SMDH)),)
+$(OUTPUT).3dsx	:	$(OUTPUT).elf $(OUTPUT).smdh
+else
+$(OUTPUT).3dsx	:	$(OUTPUT).elf
+endif
 
-$(OUTPUT).cia: $(OUTPUT).elf $(BUILD)/banner.bnr $(BUILD)/icon.icn
-	$(MAKEROM) -f cia -o $@ -elf $< -rsf $(CURDIR)/app.rsf -target t -exefslogo -banner $(BUILD)/banner.bnr -icon $(BUILD)/icon.icn -DAPP_TITLE="$(APP_TITLE)" -DPRODUCT_CODE="$(PRODUCT_CODE)" -DUNIQUE_ID="$(UNIQUE_ID)"
+MAKEROM	?=	makerom
+
+%.cia: $(OUTPUT).elf $(BUILD)/banner.bnr $(BUILD)/icon.icn
+	$(MAKEROM) -f cia -o "$@" -elf "$(OUTPUT).elf" -rsf "$(RSF_PATH)" -target t -exefslogo -banner "$(BUILD)/banner.bnr" -icon "$(BUILD)/icon.icn" -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)"
 
 # Banner
 
-BANNERTOOL ?= bannertool
+BANNERTOOL	?=	bannertool
 
 ifeq ($(suffix $(BANNER_IMAGE)),.cgfx)
 	BANNER_IMAGE_ARG := -ci
@@ -159,11 +169,11 @@ else
 	BANNER_AUDIO_ARG := -a
 endif
 
-$(BUILD)/%.bnr: $(BANNER_IMAGE) $(BANNER_AUDIO)
-	$(BANNERTOOL) makebanner $(BANNER_IMAGE_ARG) $(BANNER_IMAGE) $(BANNER_AUDIO_ARG) $(BANNER_AUDIO) -o $@
+$(BUILD)/%.bnr	:	$(BANNER_IMAGE) $(BANNER_AUDIO)
+	$(BANNERTOOL) makebanner $(BANNER_IMAGE_ARG) "$(BANNER_IMAGE)" $(BANNER_AUDIO_ARG) "$(BANNER_AUDIO)" -o "$@"
 
-$(BUILD)/%.icn: $(ICON)
-	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i $(ICON) -f visible,nosavebackups -o $@
+$(BUILD)/%.icn	:	$(ICON)
+	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(ICON)" -f "$(ICON_FLAGS)" -o "$@"
 
 #---------------------------------------------------------------------------------
 else
@@ -173,11 +183,6 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #---------------------------------------------------------------------------------
 # main targets
 #---------------------------------------------------------------------------------
-ifeq ($(strip $(NO_SMDH)),)
-$(OUTPUT).3dsx	:	$(OUTPUT).elf $(OUTPUT).smdh
-else
-$(OUTPUT).3dsx	:	$(OUTPUT).elf
-endif
 
 $(OUTPUT).elf	:	$(OFILES)
 
