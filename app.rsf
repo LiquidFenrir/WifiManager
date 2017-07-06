@@ -4,7 +4,7 @@ BasicInfo:
   Logo                    : Homebrew
 
 TitleInfo:
-  Category                : $(APP_CATEGORY)
+  Category                : Application
   UniqueId                : $(APP_UNIQUE_ID)
 
 Option:
@@ -231,7 +231,6 @@ AccessControlInfo:
    - news:s
    - nwm::EXT
    - nwm::UDS
-   - nwm::SOC
    - ptm:sysm
    - ptm:u
    - pxi:dev

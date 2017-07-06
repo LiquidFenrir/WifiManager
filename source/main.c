@@ -1,69 +1,28 @@
-#include <3ds.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+#include "blocks.h"
+#include "save.h"
+#include "stringutils.h"
+#include "filebrowser/filebrowser.h"
 
-#define WORKDIR "/3ds/WifiManager/"
-
-#define CFG_WIFI_BLKID (u32 )0x00080000
-#define CFG_WIFI_SLOTS 3
-#define CFG_WIFI_SLOT_SIZE (u32 )0xC00
-
-Result ret;
-
-void loadFileToBuf(u8 * buf, u32 size, const char * path)
-{
-	printf("Load %s to buf\n", path);
-	
-	FILE * fh = fopen(path, "rb");
-	
-	fread(buf, size, 1, fh);
-	
-	fclose(fh);
-	
-	puts("done");
-}
-
-void saveBufToFile(u8 * buf, u32 size, const char * path)
-{
-	printf("Saving buf to %s\n", path);
-	
-	FILE * fh = fopen(path, "wb");
-	
-	fwrite(buf, size, 1, fh);
-	
-	fclose(fh);
-	
-	puts("done");
-}
+#define WORKING_DIR "/3ds/WifiManager/"
 
 int main() {
 	
-	chdir(WORKDIR);
+	chdir(WORKING_DIR);
 	
 	gfxInitDefault();
-	consoleInit(GFX_TOP, NULL);
+	PrintConsole topScreen, bottomScreen;
+	consoleInit(GFX_TOP, &topScreen);
+	consoleInit(GFX_BOTTOM, &bottomScreen);
 	
-	puts("init");
-	
-	ret = cfguInit();
+	Result ret = cfguInit();
 	if (ret) printf("cfguInit\nresult: 0x%08x\n", (unsigned int)ret);
 	
-	puts("done");
-	
-	puts("mallocing");
-	
-	u8 * wifiblk = malloc(CFG_WIFI_SLOT_SIZE);
-	memset(wifiblk, 0x0, CFG_WIFI_SLOT_SIZE);
-	
-	puts("done");
-	
-	u32 selected_slot = 0;
+	int selected_slot = 0;
 	
 	puts("Press A to save current slot to file");
 	puts("Press B to restore current slot from file");
-	puts("Press START to quit");
+	puts("Press START to quit (reboot)");
+	printf("Selected slot: %i\n", selected_slot);
 	
 	while (aptMainLoop()) {
 		
@@ -71,57 +30,59 @@ int main() {
 		
 		if (hidKeysDown() & KEY_START) break;
 		else if (hidKeysDown() & KEY_A)
-		{	
-			puts("getting");
+		{
+			printf("Saving WiFi slot %i...\n", selected_slot);
+			wifiBlock slotData;
+			ret = getWifiSlot(selected_slot, &slotData);
 			
-			ret = CFG_GetConfigInfoBlk8(CFG_WIFI_SLOT_SIZE, CFG_WIFI_BLKID+selected_slot, wifiblk);
-			if (ret) printf("CFG_GetConfigInfoBlk8\nresult: 0x%08x\n", (unsigned int)ret);
-			else {
-				
-				printf("Slot %lu SSID is '%s' and password is '%s'\n", selected_slot, wifiblk+0x8, wifiblk+0x2C);
-				
-				puts("saving");
-				
-				char * filename = NULL;
-				asprintf(&filename, "wifiblk_%lu.bin", selected_slot);
-				saveBufToFile(wifiblk, CFG_WIFI_SLOT_SIZE, filename);
-				free(filename);
-				memset(wifiblk, 0x0, CFG_WIFI_SLOT_SIZE);
-			}
+			char * suffix = "_wifislot.bin";
+			char filename[0x20+strlen(suffix)+1];
+			strcpy(filename, "Empty slot");
 			
-			puts("done");
+			if (slotData.network.use) strncpy(filename, slotData.network.SSID, 0x20);
+			else if (slotData.network_WPS.use) strncpy(filename, slotData.network_WPS.SSID, 0x20);
+			
+			strcat(filename, suffix);
+			cleanPath(filename);
+			printf("Saving slot to %s%s...", WORKING_DIR, filename);
+			saveBufToFile((u8*)&slotData, CFG_WIFI_SLOT_SIZE, filename);
+			printf("Done!\n");
 		}
 		else if (hidKeysDown() & KEY_B)
-		{	
-			puts("loading");
+		{
+			printf("Restoring WiFi slot %i...\n", selected_slot);
 			
-			char * filename = NULL;
-			asprintf(&filename, "wifiblk_%lu.bin", selected_slot);
-			loadFileToBuf(wifiblk, CFG_WIFI_SLOT_SIZE, filename);
-			free(filename);
+			consoleSelect(&topScreen);
+			char * filepath = filebrowser(WORKING_DIR);
+			consoleSelect(&bottomScreen);
+			if (filepath == NULL) {
+				printf("Cancelling restore...\n");
+				continue;
+			}
 			
-			printf("Slot %lu SSID is '%s' and password is '%s'\n", selected_slot, wifiblk+0x8, wifiblk+0x2C);
+			printf("Loading data from:\n%s\nto WiFi slot %i\n", filepath, selected_slot);
+			wifiBlock slotData;
+			loadFileToBuf((u8*)&slotData, CFG_WIFI_SLOT_SIZE, filepath);
+			free(filepath);
 			
-			puts("setting");
-			
-			ret = CFG_SetConfigInfoBlk8(CFG_WIFI_SLOT_SIZE, CFG_WIFI_BLKID+selected_slot, wifiblk);
-			if (ret) printf("CFG_GetConfigInfoBlk8\nresult: 0x%08x\n", (unsigned int)ret);
-			
-			memset(wifiblk, 0x0, CFG_WIFI_SLOT_SIZE);
-			
-			puts("done");
+			fixSlotCRC(&slotData);
+			ret = setWifiSlot(selected_slot, &slotData);
+			printf("Saving config savegame...\n");
+			ret = CFG_UpdateConfigNANDSavegame();
+			if (ret) printf("CFG_UpdateConfigNANDSavegame\nresult: 0x%.8lx\n", ret);
+			printf("Done!\n");
 		}
 		else if (hidKeysDown() & KEY_UP)
 		{
 			selected_slot++;
 			if (selected_slot >= CFG_WIFI_SLOTS) selected_slot = CFG_WIFI_SLOTS-1;
-			printf("Selected slot: %lu\n", selected_slot);
+			printf("Selected slot: %i\n", selected_slot);
 		}
 		else if (hidKeysDown() & KEY_DOWN)
 		{
 			selected_slot--;
-			if (selected_slot >= CFG_WIFI_SLOTS) selected_slot = 0;
-			printf("Selected slot: %lu\n", selected_slot);
+			if (selected_slot < 0) selected_slot = 0;
+			printf("Selected slot: %i\n", selected_slot);
 		}
 		
 		gfxFlushBuffers();
@@ -130,9 +91,10 @@ int main() {
 		gspWaitForVBlank();
 	}
 	
-	free(wifiblk);
-	
 	cfguExit();
 	gfxExit();
+	
+	APT_HardwareResetAsync();
+	
 	return 0;
 }
