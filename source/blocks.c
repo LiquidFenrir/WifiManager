@@ -18,6 +18,6 @@ Result setWifiSlot(int selected_slot, wifiBlock * slotData)
 void fixSlotCRC(wifiBlock * slotData)
 {
 	printf("Previous CRC-16 checksum: %.4X\n", slotData->checksum);
-	slotData->checksum = crc_16((u8*)(&(slotData->network)), 0x410);
+	slotData->checksum = crc_16((u8*)(slotData)+4, 0x410);
 	printf("New CRC-16 checksum: %.4X\n", slotData->checksum);
 }
