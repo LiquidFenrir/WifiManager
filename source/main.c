@@ -44,7 +44,7 @@ int main() {
 			
 			strcat(filename, suffix);
 			cleanPath(filename);
-			printf("Saving slot to %s%s...", WORKING_DIR, filename);
+			printf("Saving slot to:\n%s%s\n", WORKING_DIR, filename);
 			saveBufToFile((u8*)&slotData, CFG_WIFI_SLOT_SIZE, filename);
 			printf("Done!\n");
 		}
