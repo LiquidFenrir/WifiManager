@@ -11,6 +11,7 @@ extern "C" {
 #include <string.h>
 
 extern FS_Archive sdmcArchive;
+extern touchPosition touch;
 
 #ifdef __cplusplus
 }

@@ -1,4 +1,5 @@
 #include "blocks.hpp"
+#include "buttons.hpp"
 
 extern "C" {
 #include "stringutils.h"
@@ -6,6 +7,9 @@ extern "C" {
 #include "drawing.h"
 
 FS_Archive sdmcArchive;
+touchPosition touch;
+
+slots_list list;
 
 int main(int argc, char ** argv)
 {
@@ -19,19 +23,23 @@ int main(int argc, char ** argv)
     pp2d_load_texture_png(TEXTURE_SAVE, "romfs:/save.png");
     pp2d_load_texture_png(TEXTURE_WRITE, "romfs:/write.png");
     pp2d_load_texture_png(TEXTURE_DELETE, "romfs:/delete.png");
-    pp2d_load_texture_png(TEXTURE_ARROW, "romfs:/arrow.png");
+    pp2d_load_texture_png(TEXTURE_ARROW_UP, "romfs:/arrow_up.png");
+    pp2d_load_texture_png(TEXTURE_ARROW_DOWN, "romfs:/arrow_down.png");
 
     FSUSER_OpenArchive(&sdmcArchive, ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""));
-    slots_list list = slots_list(WORKING_DIR);
+    list = slots_list(WORKING_DIR);
+    init_buttons();
     bool wrote = false;
 
     while(aptMainLoop())
     {
+        hidScanInput();
+        hidTouchRead(&touch);
+
         pp2d_begin_draw(GFX_BOTTOM, GFX_LEFT);
         list.draw_interface();
         pp2d_end_draw();
 
-        hidScanInput();
         u32 kDown = hidKeysDown();
         u32 kHeld = hidKeysHeld();
 
@@ -45,8 +53,11 @@ int main(int argc, char ** argv)
 
         if((kDown | kHeld) & KEY_TOUCH)
         {
-            touchPosition touch;
-            hidTouchRead(&touch);
+            for(auto button : buttons)
+            {
+                if(button.is_pressable() && button.is_pressed() && button.action != NULL)
+                    button.action();
+            }
         }
     }
 
@@ -54,11 +65,8 @@ int main(int argc, char ** argv)
     romfsExit();
     cfguExit();
 
-    if(wrote)
-    {
-        APT_HardwareResetAsync();
-        for(;;);
-    }
+    APT_HardwareResetAsync();
+    for(;;);
 
     return 0;
 }

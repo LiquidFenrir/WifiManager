@@ -15,7 +15,7 @@ typedef enum {
     WIFI_ENCRYPTION_WPA_PSK_AES,
     WIFI_ENCRYPTION_WPA2_PSK_TKIP,
     WIFI_ENCRYPTION_WPA2_PSK_AES,
-    
+
     WIFI_ENCRYPTION_AMOUNT,
 } wifi_encryption_type;
 
@@ -105,7 +105,7 @@ public:
     void copy_slot(wifi_slot other_slot);
     wifi_slot_s get_data(void);
     void draw_info(bool to_the_right);
-    
+
     bool operator<(const wifi_slot &slot) const { return path.compare(slot.path) < 0; }; //for sorting
 
 private:
@@ -123,13 +123,28 @@ private:
 class slots_list
 {
 public:
+    slots_list();
     slots_list(std::string main_path);
     void draw_interface(void);
-    
+
     void next_slot_right(void);
     void next_slot_left(void);
     void next_backup_up(void);
     void next_backup_down(void);
+
+    void select_slot(int id);
+    void select_backup(int id);
+
+    void write_to(int id);
+    void write_to_selected(void);
+    void save_from(int id);
+    void save_from_selected(void);
+    
+    void delete_selected_backup(void);
+
+    bool slot_exists(int id);
+    bool selected_new_backup(void);
+    bool can_go_down(void);
 
 private:
     wifi_slot slots[CFG_WIFI_SLOTS];
@@ -142,3 +157,5 @@ private:
     unsigned int selected_backup;
     unsigned int scroll;
 };
+
+extern slots_list list;

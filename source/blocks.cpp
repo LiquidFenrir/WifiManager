@@ -1,4 +1,5 @@
 #include "blocks.hpp"
+#include "buttons.hpp"
 
 extern "C" {
 #include "file.h"
@@ -23,7 +24,6 @@ wifi_slot::wifi_slot(int id)
 }
 wifi_slot::wifi_slot(std::string path)
 {
-    DEBUG("string\n");
     this->id = -1;
     this->path = path;
     this->read_slot();
@@ -34,24 +34,11 @@ void wifi_slot::fix_slot_crc(void)
     this->slot_data.crc_checksum = crc_16((u8*)(&this->slot_data)+4, 0x410);
 }
 
-static void print_info(wifi_slot slot)
-{
-    DEBUG("exist: %i\n", slot.exists);
-    DEBUG("editable_security: %i\n", slot.editable_security);
-    DEBUG("type: %i\n", slot.type);
-    DEBUG("ssid: %s\n", slot.name.c_str());
-    DEBUG("password: %s\n", slot.password.c_str());
-    DEBUG("encryption: %i\n", slot.encryption);
-}
-
 Result wifi_slot::read_slot(void)
 {
     Result ret = 0;
-    bool from_file = false;
     if(id == -1)
     {
-        from_file = true;
-        DEBUG("reading from file\n");
         Handle handle;
 
         openFile(this->path.c_str(), sdmcArchive, &handle, false);
@@ -59,7 +46,6 @@ Result wifi_slot::read_slot(void)
         FSFILE_Close(handle);
 
         ret = 0;
-        DEBUG("done reading from file\n");
     }
     else
         ret = CFG_GetConfigInfoBlk8(sizeof(this->slot_data), CFG_WIFI_BLKID+this->id, (u8*)&this->slot_data);
@@ -92,11 +78,6 @@ Result wifi_slot::read_slot(void)
         {
             this->password = "(not available)";
         }
-    }
-
-    if(from_file)
-    {
-        print_info(*this);
     }
 
     return ret;
@@ -140,15 +121,11 @@ void wifi_slot::draw_info(bool to_the_right)
     pp2d_draw_on(GFX_TOP, GFX_LEFT);
     int x_offset = 15 + to_the_right*190;
     int y_offset = 15;
-    pp2d_draw_rectangle(x_offset, y_offset, 180, 210, COLOR_BLACK);
-    x_offset += 2;
-    y_offset += 2;
-    pp2d_draw_rectangle(x_offset, y_offset, 176, 206, COLOR_FOREGROUD);
-    x_offset += 2;
-    y_offset += 2;
+    Area slot_area = Area(x_offset, y_offset, 180, 210);
+    slot_area.draw();
 
-    int text_x = x_offset+5;
-    int text_y = y_offset+5;
+    int text_x = x_offset+9;
+    int text_y = y_offset+9;
     float text_scale_x = 0.5;
     float text_scale_y = 0.5;
     if(this->id == -1)
@@ -183,6 +160,12 @@ void wifi_slot::draw_info(bool to_the_right)
         pp2d_draw_textf(text_x, text_y, text_scale_x, text_scale_y, COLOR_BLACK, "Password:\n%s", this->password.c_str());
 }
 
+slots_list::slots_list()
+{
+    scroll = 0;
+    selected_slot = 0;
+    selected_backup = 0;
+}
 slots_list::slots_list(std::string main_path)
 {
     scroll = 0;
@@ -224,25 +207,13 @@ slots_list::slots_list(std::string main_path)
 
 static void draw_single_slot(int id, bool selected, bool enable_reading, bool enable_writing)
 {
-    int x_offset = 15+id*100;
-    int y_offset = 15;
-    pp2d_draw_rectangle(x_offset, y_offset, 90, 56, COLOR_BLACK);
-    x_offset += 2;
-    y_offset += 2;
-    pp2d_draw_rectangle(x_offset, y_offset, 25, 25, enable_reading ? COLOR_FOREGROUD : COLOR_UNSELECTABLE);
-    y_offset += 2;
-    pp2d_draw_texture_blend(TEXTURE_SAVE, x_offset, y_offset, COLOR_BLACK);
-    y_offset += 25;
-    pp2d_draw_rectangle(x_offset, y_offset, 25, 25, enable_writing ? COLOR_FOREGROUD : COLOR_UNSELECTABLE);
-    y_offset += 2;
-    pp2d_draw_texture_blend(TEXTURE_WRITE, x_offset, y_offset, COLOR_BLACK);
+    buttons[BUTTON_SLOT_1 + id*3].selected = selected;
+    buttons[BUTTON_SLOT_1 + id*3].draw();
+    buttons[BUTTON_SLOT_1_SAVE + id*3].draw();
+    buttons[BUTTON_SLOT_1_WRITE + id*3].draw();
 
-    y_offset -= 29;
-    x_offset += 2 + 25;
-    pp2d_draw_rectangle(x_offset, y_offset, 59, 52, !enable_reading ? COLOR_UNSELECTABLE : (selected ? COLOR_CURSOR : COLOR_FOREGROUD));
-
-    int text_x = x_offset+9;
-    int text_y = y_offset+2;
+    int text_x = 53+id*100;
+    int text_y = 19;
     float text_scale_x = 0.8;
     float text_scale_y = 0.8;
     pp2d_draw_text(text_x, text_y, text_scale_x, text_scale_y, COLOR_BLACK, "Slot");
@@ -263,32 +234,15 @@ void slots_list::draw_list(void)
     int x_offset = 15;
     int y_offset = 81;
     int buttons_width = 35;
-    int bg_width = 320-x_offset*2;
+    int bg_width = 320-x_offset*2-buttons_width;
     int bg_height = 240-y_offset-x_offset;
 
-    int button_height = bg_height/3;
-    pp2d_draw_rectangle(x_offset, y_offset, bg_width, bg_height, COLOR_BLACK);
-    pp2d_draw_rectangle(x_offset+2, y_offset+2, bg_width-4-buttons_width, bg_height-4, COLOR_FOREGROUD);
+    Area background = Area(x_offset, y_offset, bg_width, bg_height);
+    background.draw();
 
-    int texture_x = x_offset + bg_width - buttons_width;
-    int delete_texture_y = y_offset + button_height*1;
-    pp2d_draw_rectangle(texture_x, delete_texture_y, buttons_width-2, button_height, this->selected_backup == 0 ? COLOR_UNSELECTABLE : COLOR_FOREGROUD);
-    pp2d_draw_texture_blend(TEXTURE_DELETE, texture_x+5, delete_texture_y+10, COLOR_BLACK);
-
-    int arrow_texture_y = y_offset + 2;
-
-    bool go_up = this->selected_backup > 0;
-    pp2d_draw_rectangle(texture_x, arrow_texture_y, buttons_width-2, button_height-4, go_up ? COLOR_FOREGROUD : COLOR_UNSELECTABLE);
-    pp2d_texture_select(TEXTURE_ARROW, texture_x+5, arrow_texture_y+10);
-    pp2d_texture_flip(VERTICAL);
-    pp2d_texture_blend(COLOR_BLACK);
-    pp2d_texture_draw();
-
-    arrow_texture_y += button_height*2;
-    bool go_down = this->backups.size() != 0 && this->selected_backup < this->backups.size();
-
-    pp2d_draw_rectangle(texture_x, arrow_texture_y, buttons_width-2, button_height-4, go_down ? COLOR_FOREGROUD : COLOR_UNSELECTABLE);
-    pp2d_draw_texture_blend(TEXTURE_ARROW, texture_x+5, arrow_texture_y+10, COLOR_BLACK);
+    buttons[BUTTON_ARROW_UP].draw();
+    buttons[BUTTON_DELETE].draw();
+    buttons[BUTTON_ARROW_DOWN].draw();
 
     const unsigned int names_per_screen = 7;
     if(this->selected_backup == this->scroll+names_per_screen+1)
@@ -314,7 +268,7 @@ void slots_list::draw_list(void)
         }
 
         if(i == this->selected_backup)
-            pp2d_draw_rectangle(x_offset+2, text_y-2, bg_width-4-buttons_width, pp2d_get_text_height(current_slot.name.c_str(), 0.6, 0.6)+2, COLOR_CURSOR);
+            pp2d_draw_rectangle(x_offset+2, text_y-2, bg_width-4, pp2d_get_text_height(current_slot.name.c_str(), 0.6, 0.6)+2, COLOR_CURSOR);
         pp2d_draw_text(text_x, text_y, 0.6, 0.6, COLOR_BLACK, current_slot.name.c_str());
     }
 }
@@ -352,4 +306,56 @@ void slots_list::next_backup_down(void)
 {
     if(this->selected_backup < this->backups.size())
         this->selected_backup++;
+}
+
+void slots_list::select_slot(int id)
+{
+    if(this->slots[id].exists)
+        this->selected_slot = id;
+}
+
+void slots_list::write_to(int id)
+{
+    if(this->selected_backup != 0)
+        this->slots[id].copy_slot(this->backups[this->selected_backup-1]);
+}
+void slots_list::save_from(int id)
+{
+    if(this->slots[id].exists)
+    {
+        if(this->selected_backup == 0)
+        {
+
+        }
+        else
+            this->backups[this->selected_backup-1].copy_slot(this->slots[id]);
+    }
+}
+
+void slots_list::write_to_selected(void)
+{
+    this->write_to(this->selected_slot);
+}
+void slots_list::save_from_selected(void)
+{
+    this->save_from(this->selected_slot);
+}
+
+void slots_list::delete_selected_backup(void)
+{
+    this->backups[this->selected_backup-1].delete_slot();
+    this->backups.erase(this->backups.begin()+(--this->selected_backup));
+}
+
+bool slots_list::selected_new_backup(void)
+{
+    return this->selected_backup == 0;
+}
+bool slots_list::slot_exists(int id)
+{
+    return this->slots[id].exists;
+}
+bool slots_list::can_go_down(void)
+{
+    return this->selected_backup < this->backups.size();
 }
