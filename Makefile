@@ -9,25 +9,40 @@ endif
 TOPDIR ?= $(CURDIR)
 include $(DEVKITARM)/3ds_rules
 
-APP_TITLE        :=  WifiManager
-APP_DESCRIPTION  :=  Backup and restore your WiFi slots!
-APP_AUTHOR       :=  LiquidFenrir
+# Your values.
+APP_TITLE           :=	WifiManager
+APP_DESCRIPTION     :=	Backup and restore your WiFi slots!
+APP_AUTHOR          :=	LiquidFenrir
 
-TARGET           :=  $(notdir $(CURDIR))
-OUTDIR           :=  out
-BUILD            :=  build
-SOURCES          :=  source source/filebrowser
-INCLUDES         :=  include
 
-ICON             :=  icon.png
-ICON_FLAGS       :=  visible,nosavebackups
+TARGET              :=	$(subst $e ,_,$(notdir $(APP_TITLE)))
+OUTDIR              :=	out
+BUILD               :=	build
+SOURCES             :=	source source/pp2d
+INCLUDES            :=	include
+ROMFS               :=	romfs
 
-BANNER_AUDIO     :=  audio.wav
-BANNER_IMAGE     :=  banner.png
 
-RSF_PATH         :=  app.rsf
-PRODUCT_CODE     :=  CTR-P-WIFI
-UNIQUE_ID        :=  0x05DC9
+# Path to the files
+# If left blank, will try to use "icon.png", "$(TARGET).png", or the default ctrulib icon, in that order
+ICON                :=	meta/icon.png
+
+BANNER_AUDIO        :=	meta/audio.wav
+BANNER_IMAGE        :=	meta/banner.png
+
+RSF_PATH            :=	meta/app.rsf
+
+# If left blank, makerom will use the default Homebrew logo
+LOGO                :=	
+
+
+# If left blank, makerom will use default values (0xff3ff and CTR-P-CTAP, respectively)
+# Be careful if UNIQUE_ID is the same as other apps: it will overwrite the previously installed one
+UNIQUE_ID           :=	0x05DC9
+PRODUCT_CODE        :=	CTR-P-WIFI
+
+# Don't really need to change this
+ICON_FLAGS          :=	nosavebackups,visible
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -35,23 +50,25 @@ UNIQUE_ID        :=  0x05DC9
 ARCH	:=	-march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft
 
 CFLAGS	:=	-g -Wall -Wextra -O2 -mword-relocations \
-			-fomit-frame-pointer -ffunction-sections \
+			-ffunction-sections \
 			$(ARCH)
 
-CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS
+revision := $(shell git describe --tags --match v[0-9]* --abbrev=8 | sed 's/-[0-9]*-g/-/')
+
+CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS -D_GNU_SOURCE -DTITLE="$(APP_TITLE)" -DAUTHOR="$(APP_AUTHOR)"
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lctru -lm
+LIBS	:= -lcitro3d -lctrud -lm -lz
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
 # include and lib
 #---------------------------------------------------------------------------------
-LIBDIRS	:= $(CTRULIB)
+LIBDIRS	:= $(CTRULIB) $(DEVKITPRO)/portlibs/armv6k
 
 
 #---------------------------------------------------------------------------------
@@ -124,12 +141,13 @@ endif
 .PHONY: $(BUILD) clean all
 
 #---------------------------------------------------------------------------------
+all: 3dsx cia
+
 3dsx: $(BUILD) $(OUTPUT).3dsx
 
 cia : $(BUILD) $(OUTPUT).cia
 
-all: 3dsx cia
-
+#---------------------------------------------------------------------------------
 $(BUILD):
 	@mkdir -p $(OUTDIR)
 	@[ -d "$@" ] || mkdir -p "$@"
@@ -141,19 +159,27 @@ clean:
 	@rm -fr $(BUILD) $(OUTDIR)
 
 #---------------------------------------------------------------------------------
-
 ifeq ($(strip $(NO_SMDH)),)
 $(OUTPUT).3dsx	:	$(OUTPUT).elf $(OUTPUT).smdh
 else
 $(OUTPUT).3dsx	:	$(OUTPUT).elf
 endif
 
-MAKEROM	?=	makerom
+#---------------------------------------------------------------------------------
+MAKEROM		?=	makerom
 
-%.cia: $(OUTPUT).elf $(BUILD)/banner.bnr $(BUILD)/icon.icn
-	$(MAKEROM) -f cia -o "$@" -elf "$(OUTPUT).elf" -rsf "$(RSF_PATH)" -target t -exefslogo -banner "$(BUILD)/banner.bnr" -icon "$(BUILD)/icon.icn" -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)"
+MAKEROM_ARGS		:=	-elf "$(OUTPUT).elf" -rsf "$(RSF_PATH)" -banner "$(BUILD)/banner.bnr" -icon "$(BUILD)/icon.icn" -DAPP_TITLE="$(APP_TITLE)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)" -DAPP_UNIQUE_ID="$(UNIQUE_ID)"
 
-# Banner
+ifneq ($(strip $(LOGO)),)
+	MAKEROM_ARGS	+=	 -logo "$(LOGO)"
+endif
+ifneq ($(strip $(ROMFS)),)
+	MAKEROM_ARGS	+=	 -DAPP_ROMFS="$(ROMFS)"
+endif
+
+$(OUTPUT).cia: $(OUTPUT).elf $(BUILD)/banner.bnr $(BUILD)/icon.icn
+	$(MAKEROM) -f cia -o "$@" -target t -exefslogo $(MAKEROM_ARGS)
+
 
 BANNERTOOL	?=	bannertool
 
@@ -169,11 +195,12 @@ else
 	BANNER_AUDIO_ARG := -a
 endif
 
-$(BUILD)/%.bnr	:	$(BANNER_IMAGE) $(BANNER_AUDIO)
+$(BUILD)/banner.bnr	:	$(BANNER_IMAGE) $(BANNER_AUDIO)
 	$(BANNERTOOL) makebanner $(BANNER_IMAGE_ARG) "$(BANNER_IMAGE)" $(BANNER_AUDIO_ARG) "$(BANNER_AUDIO)" -o "$@"
 
-$(BUILD)/%.icn	:	$(ICON)
-	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(ICON)" -f "$(ICON_FLAGS)" -o "$@"
+$(BUILD)/icon.icn	:	$(APP_ICON)
+	$(BANNERTOOL) makesmdh -s "$(APP_TITLE)" -l "$(APP_DESCRIPTION)" -p "$(APP_AUTHOR)" -i "$(APP_ICON)" -f "$(ICON_FLAGS)" -o "$@"
+
 
 #---------------------------------------------------------------------------------
 else

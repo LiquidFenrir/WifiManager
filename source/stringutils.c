@@ -2,20 +2,21 @@
 
 void cleanPath(char * path)
 {
-	for (int i = 0; path[i]; i++) { //replace all spaces and fat32 reserved characters in the path with underscores 
-		switch (path[i]) {
-			case ' ':
-			case '"':
-			case '*':
-			case ':':
-			case '<':
-			case '>':
-			case '?':
-			case '\\':
-			case '|':
-				path[i] = '_';
-			default:
-				break;
-		}
-	}
+    for(unsigned int i = 0; i < strlen(path); i++)
+    { //replace all spaces and fat32 reserved characters in the path with underscores 
+        switch (path[i]) {
+            case ' ':
+            case '"':
+            case '*':
+            case ':':
+            case '<':
+            case '>':
+            case '?':
+            case '\\':
+            case '|':
+                path[i] = '_';
+            default:
+                break;
+        }
+    }
 }
