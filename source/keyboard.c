@@ -1,7 +1,7 @@
 #include "keyboard.h"
 #include "stringutils.h"
 
-char * get_input(unsigned int max)
+char * get_input(unsigned int max, const char * original_text)
 {
     char * input = calloc(max+2, sizeof(char));
 
@@ -11,6 +11,8 @@ char * get_input(unsigned int max)
         swkbdInit(&swkbd, SWKBD_TYPE_WESTERN, 2, max);
 
         swkbdSetHintText(&swkbd, "Select a name for the file.");
+        if(original_text != NULL)
+            swkbdSetInitialText(&swkbd, original_text);
 
         swkbdSetValidation(&swkbd, SWKBD_NOTEMPTY_NOTBLANK, 0, max);
 

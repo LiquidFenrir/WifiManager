@@ -1,5 +1,7 @@
 #include "blocks.hpp"
 #include <sstream>
+#include <iomanip>
+#include <ctime>
 #include "buttons.hpp"
 
 extern "C" {
@@ -327,14 +329,23 @@ void slots_list::save_from(int id)
     {
         if(this->selected_backup == 0)
         {
-            char * file_name = get_input(0x100);
+            std::stringstream original_stream;
+            std::time_t t = std::time(nullptr);
+            std::tm tm = *std::localtime(&t);
+            original_stream << this->slots[id].name << "_" << std::put_time(&tm, "%H-%M-%S_%e-%m-%Y");
+            std::string original_string = original_stream.str();
+            const char * original_text = original_string.c_str();
+            char * file_name = get_input(0x100, original_text);
             if(file_name != NULL)
             {
                 std::stringstream path_stream;
                 path_stream << WORKING_DIR << "/" << file_name << ".bin";
                 wifi_slot new_slot = wifi_slot(path_stream.str());
-                new_slot.copy_slot(this->slots[id]);
-                this->backups.push_back(new_slot);
+                if(!new_slot.exists) //prevent clicking too fast causing duplicates
+                {
+                    new_slot.copy_slot(this->slots[id]);
+                    this->backups.push_back(new_slot);
+                }
             }
             free(file_name);
         }
