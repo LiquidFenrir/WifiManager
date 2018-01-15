@@ -19,6 +19,7 @@ int main(int argc, char ** argv)
     pp2d_set_screen_color(GFX_BOTTOM, COLOR_BACKGROUND);
     pp2d_load_texture_png(TEXTURE_SAVE, "romfs:/save.png");
     pp2d_load_texture_png(TEXTURE_WRITE, "romfs:/write.png");
+    pp2d_load_texture_png(TEXTURE_HIDE, "romfs:/hide.png");
     pp2d_load_texture_png(TEXTURE_DELETE, "romfs:/delete.png");
     pp2d_load_texture_png(TEXTURE_ARROW_UP, "romfs:/arrow_up.png");
     pp2d_load_texture_png(TEXTURE_ARROW_DOWN, "romfs:/arrow_down.png");

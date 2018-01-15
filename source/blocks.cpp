@@ -250,6 +250,7 @@ void slots_list::draw_list(void)
     background.draw();
 
     buttons[BUTTON_ARROW_UP].draw();
+    buttons[BUTTON_HIDE_PASSWORDS].draw();
     buttons[BUTTON_DELETE].draw();
     buttons[BUTTON_ARROW_DOWN].draw();
 
@@ -387,6 +388,7 @@ void slots_list::delete_selected_backup(void)
 void slots_list::toggle_password_visibility(void)
 {
     this->passwords_hidden = !this->passwords_hidden;
+    buttons[BUTTON_HIDE_PASSWORDS].selected = this->passwords_hidden;
 }
 
 bool slots_list::selected_new_backup(void)
