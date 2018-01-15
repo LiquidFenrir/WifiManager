@@ -374,8 +374,11 @@ void slots_list::save_from_selected(void)
 
 void slots_list::delete_selected_backup(void)
 {
-    this->backups[this->selected_backup-1].delete_slot();
-    this->backups.erase(this->backups.begin()+(--this->selected_backup));
+    if(this->selected_backup != 0)
+    {
+        this->backups[this->selected_backup-1].delete_slot();
+        this->backups.erase(this->backups.begin()+(--this->selected_backup));
+    }
 }
 
 void slots_list::toggle_password_visibility(void)
