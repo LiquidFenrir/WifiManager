@@ -14,10 +14,14 @@ Result createFolderRecursively(const char * path, FS_Archive archive)
         Handle dirHandle;
         ret = FSUSER_OpenDirectory(&dirHandle, archive, dirpath);
         if(R_SUCCEEDED(ret))
+        {
             FSDIR_Close(dirHandle);
+        }
         else
+        {
             if(R_FAILED(ret = FSUSER_CreateDirectory(archive, dirpath, FS_ATTRIBUTE_DIRECTORY)))
                 break;
+        }
 
         if(slashpos != NULL)
             *slashpos = '/';
