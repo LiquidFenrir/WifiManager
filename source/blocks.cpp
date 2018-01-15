@@ -345,6 +345,7 @@ void slots_list::save_from(int id)
                 {
                     new_slot.copy_slot(this->slots[id]);
                     this->backups.push_back(new_slot);
+                    std::sort(this->backups.begin(), this->backups.end());
                 }
             }
             free(file_name);
