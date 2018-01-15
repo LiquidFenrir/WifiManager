@@ -254,12 +254,15 @@ void slots_list::draw_list(void)
     buttons[BUTTON_ARROW_DOWN].draw();
 
     const unsigned int names_per_screen = 7;
-    if(this->selected_backup == this->scroll-1 || this->backups.size()-this->scroll+1 < names_per_screen)
-        this->scroll--;
-    else if(this->backups.size()-this->scroll >= names_per_screen)
+    if(this->backups.size() >= names_per_screen)
     {
-        if(this->selected_backup-this->scroll >= names_per_screen)
-            this->scroll++;
+        if(this->selected_backup == this->scroll-1 || this->backups.size()-this->scroll+1 < names_per_screen)
+            this->scroll--;
+        else if(this->backups.size()-this->scroll >= names_per_screen)
+        {
+            if(this->selected_backup-this->scroll >= names_per_screen)
+                this->scroll++;
+        }
     }
 
     int text_x = x_offset + 4;
