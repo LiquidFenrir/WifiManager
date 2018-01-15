@@ -254,10 +254,13 @@ void slots_list::draw_list(void)
     buttons[BUTTON_ARROW_DOWN].draw();
 
     const unsigned int names_per_screen = 7;
-    if(this->selected_backup == this->scroll+names_per_screen+1)
-        this->scroll++;
-    else if(this->selected_backup == this->scroll-1)
+    if(this->selected_backup == this->scroll-1)
         this->scroll--;
+    else if(this->backups.size()-this->scroll >= names_per_screen)
+    {
+        if(this->selected_backup-this->scroll >= names_per_screen)
+            this->scroll++;
+    }
 
     int text_x = x_offset + 4;
     for(unsigned int i = this->scroll; i < this->scroll+names_per_screen; i++)
@@ -265,7 +268,7 @@ void slots_list::draw_list(void)
         if(i > this->backups.size())
             break;
 
-        int text_y = y_offset + 2 + 2 + i * 20;
+        int text_y = y_offset + 2 + 2 + (i-this->scroll) * 20;
         wifi_slot current_slot;
         if(i == 0)
         {
