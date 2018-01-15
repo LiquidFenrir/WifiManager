@@ -24,11 +24,11 @@ extern touchPosition touch;
 
 #endif
 
-#define WORKING_DIR "/3ds/WifiManager"
-
 #define DEBUG(...) fprintf(stderr, __VA_ARGS__)
 #define POS() DEBUG("%s (line %d)...\n", __func__, __LINE__)
 
 #define DEBUGPOS(...) \
         POS(); \
         DEBUG(__VA_ARGS__)
+
+#define WORKING_DIR "/3ds/"  TITLE

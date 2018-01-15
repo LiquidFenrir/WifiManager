@@ -1,9 +1,11 @@
 #include "blocks.hpp"
+#include <sstream>
 #include "buttons.hpp"
 
 extern "C" {
 #include "file.h"
 #include "checksum.h"
+#include "keyboard.h"
 }
 #include "drawing.h"
 
@@ -205,7 +207,7 @@ slots_list::slots_list(std::string main_path)
     std::sort(backups.begin(), backups.end());
 }
 
-static void draw_single_slot(int id, bool selected, bool enable_reading, bool enable_writing)
+static void draw_single_slot(int id, bool selected)
 {
     buttons[BUTTON_SLOT_1 + id*3].selected = selected;
     buttons[BUTTON_SLOT_1 + id*3].draw();
@@ -226,7 +228,7 @@ void slots_list::draw_top(void)
 {
     pp2d_draw_on(GFX_BOTTOM, GFX_LEFT);
     for(int i = 0; i < CFG_WIFI_SLOTS; i++)
-        draw_single_slot(i, (unsigned int)i == this->selected_slot, this->slots[i].exists, this->selected_backup != 0);
+        draw_single_slot(i, (unsigned int)i == this->selected_slot);
 }
 void slots_list::draw_list(void)
 {
@@ -325,7 +327,16 @@ void slots_list::save_from(int id)
     {
         if(this->selected_backup == 0)
         {
-
+            char * file_name = get_input(0x100);
+            if(file_name != NULL)
+            {
+                std::stringstream path_stream;
+                path_stream << WORKING_DIR << "/" << file_name << ".bin";
+                wifi_slot new_slot = wifi_slot(path_stream.str());
+                new_slot.copy_slot(this->slots[id]);
+                this->backups.push_back(new_slot);
+            }
+            free(file_name);
         }
         else
             this->backups[this->selected_backup-1].copy_slot(this->slots[id]);

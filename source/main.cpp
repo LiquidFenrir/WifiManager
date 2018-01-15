@@ -1,9 +1,6 @@
 #include "blocks.hpp"
 #include "buttons.hpp"
 
-extern "C" {
-#include "stringutils.h"
-}
 #include "drawing.h"
 
 FS_Archive sdmcArchive;
@@ -29,7 +26,6 @@ int main(int argc, char ** argv)
     FSUSER_OpenArchive(&sdmcArchive, ARCHIVE_SDMC, fsMakePath(PATH_EMPTY, ""));
     list = slots_list(WORKING_DIR);
     init_buttons();
-    bool wrote = false;
 
     while(aptMainLoop())
     {
@@ -41,7 +37,6 @@ int main(int argc, char ** argv)
         pp2d_end_draw();
 
         u32 kDown = hidKeysDown();
-        u32 kHeld = hidKeysHeld();
 
         if(kDown & KEY_START) break;
 
@@ -51,7 +46,7 @@ int main(int argc, char ** argv)
         if(kDown & KEY_DDOWN) list.next_backup_down();
         if(kDown & KEY_DUP) list.next_backup_up();
 
-        if((kDown | kHeld) & KEY_TOUCH)
+        if((kDown) & KEY_TOUCH)
         {
             for(auto button : buttons)
             {
@@ -64,9 +59,6 @@ int main(int argc, char ** argv)
     pp2d_exit();
     romfsExit();
     cfguExit();
-
-    APT_HardwareResetAsync();
-    for(;;);
 
     return 0;
 }

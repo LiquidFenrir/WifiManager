@@ -55,7 +55,7 @@ CFLAGS	:=	-g -Wall -Wextra -O2 -mword-relocations \
 
 revision := $(shell git describe --tags --match v[0-9]* --abbrev=8 | sed 's/-[0-9]*-g/-/')
 
-CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS -D_GNU_SOURCE -DTITLE="$(APP_TITLE)" -DAUTHOR="$(APP_AUTHOR)"
+CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS -D_GNU_SOURCE -DTITLE="\"$(APP_TITLE)\"" -DAUTHOR="\"$(APP_AUTHOR)\""
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 
