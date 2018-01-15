@@ -38,8 +38,8 @@ class Button
 {
     public:
         Button();
-        Button(int, int, int, int, bool (*)(void), void (*)(void));
-        Button(int, int, int, int, bool (*)(void), void (*)(void), size_t);
+        Button(int x, int y, int width, int height, bool (*is_pressable)(void), void (*action)(void));
+        Button(int x, int y, int width, int height, bool (*is_pressable)(void), void (*action)(void), size_t image_id);
 
         bool (*is_pressable)(void);
         void (*action)(void);
