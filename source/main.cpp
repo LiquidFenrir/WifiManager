@@ -60,5 +60,8 @@ int main(int argc, char ** argv)
     romfsExit();
     cfguExit();
 
+    APT_HardwareResetAsync();
+    for(;;);
+
     return 0;
 }
