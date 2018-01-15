@@ -120,7 +120,7 @@ wifi_slot_s wifi_slot::get_data(void)
 {
     return this->slot_data;
 }
-void wifi_slot::draw_info(bool to_the_right)
+void wifi_slot::draw_info(bool to_the_right, bool hide_password)
 {
     pp2d_draw_on(GFX_TOP, GFX_LEFT);
     int x_offset = 15 + to_the_right*190;
@@ -160,7 +160,9 @@ void wifi_slot::draw_info(bool to_the_right)
     pp2d_draw_textf(text_x, text_y, text_scale_x, text_scale_y, COLOR_BLACK, "Security: %s", encryption_type_string[this->encryption].c_str());
 
     text_y += 20;
-    if(this->password != "")
+    if(hide_password)
+        pp2d_draw_text(text_x, text_y, text_scale_x, text_scale_y, COLOR_BLACK, "Password:\n(hidden)");
+    else
         pp2d_draw_textf(text_x, text_y, text_scale_x, text_scale_y, COLOR_BLACK, "Password:\n%s", this->password.c_str());
 }
 
@@ -169,12 +171,14 @@ slots_list::slots_list()
     scroll = 0;
     selected_slot = 0;
     selected_backup = 0;
+    passwords_hidden = false;
 }
 slots_list::slots_list(std::string main_path)
 {
     scroll = 0;
     selected_slot = 0;
     selected_backup = 0;
+    passwords_hidden = false;
 
     for(int i = 0; i < CFG_WIFI_SLOTS; i++)
         slots[i] = wifi_slot(i);
@@ -278,9 +282,9 @@ void slots_list::draw_list(void)
 }
 void slots_list::draw_interface(void)
 {
-    this->slots[this->selected_slot].draw_info(false);
+    this->slots[this->selected_slot].draw_info(false, this->passwords_hidden);
     if(this->selected_backup != 0)
-        this->backups[this->selected_backup-1].draw_info(true);
+        this->backups[this->selected_backup-1].draw_info(true, this->passwords_hidden);
     this->draw_top();
     this->draw_list();
 }
@@ -368,6 +372,11 @@ void slots_list::delete_selected_backup(void)
 {
     this->backups[this->selected_backup-1].delete_slot();
     this->backups.erase(this->backups.begin()+(--this->selected_backup));
+}
+
+void slots_list::toggle_password_visibility(void)
+{
+    this->passwords_hidden = !this->passwords_hidden;
 }
 
 bool slots_list::selected_new_backup(void)

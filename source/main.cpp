@@ -49,6 +49,7 @@ int main(int argc, char ** argv)
         if(kDown & KEY_A) list.write_to_selected();
         if(kDown & KEY_B) list.save_from_selected();
         if(kDown & KEY_X) list.delete_selected_backup();
+        if(kDown & KEY_Y) list.toggle_password_visibility();
 
         if((kDown) & KEY_TOUCH)
         {

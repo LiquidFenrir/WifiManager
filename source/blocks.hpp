@@ -104,7 +104,7 @@ public:
     Result delete_slot(void);
     void copy_slot(wifi_slot other_slot);
     wifi_slot_s get_data(void);
-    void draw_info(bool to_the_right);
+    void draw_info(bool to_the_right, bool hide_password);
 
     bool operator<(const wifi_slot &slot) const { return path.compare(slot.path) < 0; }; //for sorting
 
@@ -139,8 +139,10 @@ public:
     void write_to_selected(void);
     void save_from(int id);
     void save_from_selected(void);
-    
+
     void delete_selected_backup(void);
+
+    void toggle_password_visibility(void);
 
     bool slot_exists(int id);
     bool selected_new_backup(void);
@@ -153,6 +155,7 @@ private:
     void draw_top(void);
     void draw_list(void);
 
+    bool passwords_hidden;
     unsigned int selected_slot;
     unsigned int selected_backup;
     unsigned int scroll;
