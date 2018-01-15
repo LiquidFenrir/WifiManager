@@ -169,13 +169,13 @@ void init_buttons(void)
     }
 
     int buttons_width = 35;
-    x_offset = 320-x_offset-buttons_width;
+    x_offset = 320-x_offset-buttons_width-4;
     y_offset += 66;
-    buttons.push_back(Button(x_offset-2, y_offset, buttons_width+4, 48, selected_other_backup, go_up, TEXTURE_ARROW_UP));
+    buttons.push_back(Button(x_offset, y_offset, buttons_width+4, 48, selected_other_backup, go_up, TEXTURE_ARROW_UP));
     y_offset += 48;
-    buttons.push_back(Button(x_offset-2, y_offset-2, buttons_width+4, 48+4, selected_other_backup, delete_selected_backup, TEXTURE_DELETE));
+    buttons.push_back(Button(x_offset, y_offset-2, buttons_width+4, 48+4, selected_other_backup, delete_selected_backup, TEXTURE_DELETE));
     y_offset += 48;
-    buttons.push_back(Button(x_offset-2, y_offset, buttons_width+4, 48, can_go_down, go_down, TEXTURE_ARROW_DOWN));
+    buttons.push_back(Button(x_offset, y_offset, buttons_width+4, 48, can_go_down, go_down, TEXTURE_ARROW_DOWN));
 
     DEBUG("done!\n");
 }

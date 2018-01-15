@@ -238,7 +238,7 @@ void slots_list::draw_list(void)
     int x_offset = 15;
     int y_offset = 81;
     int buttons_width = 35;
-    int bg_width = 320-x_offset*2-buttons_width;
+    int bg_width = 320-x_offset*2-buttons_width-2;
     int bg_height = 240-y_offset-x_offset;
 
     Area background = Area(x_offset, y_offset, bg_width, bg_height);
