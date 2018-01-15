@@ -8,6 +8,25 @@ touchPosition touch;
 
 slots_list list;
 
+void draw_instructions(void)
+{
+    int x_offset = 15;
+    int y_offset = 15;
+    Area bg_area = Area(x_offset, y_offset, 400-x_offset*2, 240-y_offset*2);
+    bg_area.draw();
+
+    y_offset += 25;
+    pp2d_draw_text_center(GFX_TOP, y_offset, 1.0, 1.0, COLOR_BLACK, "Instructions");
+    y_offset += 40;
+    pp2d_draw_text_center(GFX_TOP, y_offset, 0.6, 0.6, COLOR_BLACK, "Press \uE000 to write the backup to the selected slot.");
+    y_offset += 20;
+    pp2d_draw_text_center(GFX_TOP, y_offset, 0.6, 0.6, COLOR_BLACK, "Press \uE001 to backup the selected slot.");
+    y_offset += 20;
+    pp2d_draw_text_center(GFX_TOP, y_offset, 0.6, 0.6, COLOR_BLACK, "Press \uE002 to delete the highlighted backup.");
+    y_offset += 20;
+    pp2d_draw_text_center(GFX_TOP, y_offset, 0.6, 0.6, COLOR_BLACK, "Press \uE003 to toggle the passwords visibility.");
+}
+
 int main(int argc, char ** argv)
 {
     cfguInit();
@@ -33,11 +52,18 @@ int main(int argc, char ** argv)
         hidScanInput();
         hidTouchRead(&touch);
 
-        pp2d_begin_draw(GFX_BOTTOM, GFX_LEFT);
-        list.draw_interface();
+        u32 kDown = hidKeysDown();
+        u32 kHeld = hidKeysHeld();
+
+        pp2d_begin_draw(GFX_TOP, GFX_LEFT);
+        if(kHeld & KEY_SELECT)
+            draw_instructions();
+        else
+            list.draw_interface();
         pp2d_end_draw();
 
-        u32 kDown = hidKeysDown();
+        if(kHeld & KEY_SELECT)
+            continue;
 
         if(kDown & KEY_START) break;
 
