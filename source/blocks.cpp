@@ -41,11 +41,12 @@ void wifi_slot::fix_slot_crc(void)
 Result wifi_slot::read_slot(void)
 {
     Result ret = 0;
+    this->exists = false;
     if(id == -1)
     {
         Handle handle;
 
-        openFile(this->path.c_str(), sdmcArchive, &handle, false);
+        if(R_FAILED(ret = openFile(this->path.c_str(), sdmcArchive, &handle, false))) return ret;
         FSFILE_Read(handle, NULL, 0, &this->slot_data, sizeof(this->slot_data));
         FSFILE_Close(handle);
 
