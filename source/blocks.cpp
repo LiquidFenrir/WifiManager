@@ -237,7 +237,7 @@ void slots_list::draw_list(void)
     pp2d_draw_on(GFX_BOTTOM, GFX_LEFT);
     int x_offset = 15;
     int y_offset = 81;
-    int buttons_width = 35;
+    int buttons_width = 36;
     int bg_width = 320-x_offset*2-buttons_width-2;
     int bg_height = 240-y_offset-x_offset;
 

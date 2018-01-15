@@ -168,7 +168,7 @@ void init_buttons(void)
         buttons.push_back(Button(x, y_offset+27, 29, 29, selected_other_backup, write_to_slot[i], TEXTURE_WRITE));
     }
 
-    int buttons_width = 35;
+    int buttons_width = 36;
     x_offset = 320-x_offset-buttons_width-4;
     y_offset += 66;
     buttons.push_back(Button(x_offset, y_offset, buttons_width+4, 48, selected_other_backup, go_up, TEXTURE_ARROW_UP));
